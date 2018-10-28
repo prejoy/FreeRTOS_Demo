@@ -217,16 +217,16 @@ volatile uint32_t ulDummy = 0UL;
 void vPortSVCHandler( void )
 {
 	__asm volatile (
-					"	ldr	r3, pxCurrentTCBConst2		\n" /* Restore the context. */
+					"	ldr	r3, pxCurrentTCBConst2		\n" /* Restore the context.获取要切换的任务的TCB，任务要恢复的现场都在TCB里 */
 					"	ldr r1, [r3]					\n" /* Use pxCurrentTCBConst to get the pxCurrentTCB address. */
 					"	ldr r0, [r1]					\n" /* The first item in pxCurrentTCB is the task top of stack. */
-					"	ldmia r0!, {r4-r11}				\n" /* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
-					"	msr psp, r0						\n" /* Restore the task stack pointer. */
+					"	ldmia r0!, {r4-r11}				\n" /* Pop the registers that are not automatically saved on exception entry and the critical nesting count.根据任务堆栈恢复现场 */
+					"	msr psp, r0						\n" /* Restore the task stack pointer.设置进程指针PSP */
 					"	isb								\n"
-					"	mov r0, #0 						\n"
+					"	mov r0, #0 						\n"	/* 开中断*/
 					"	msr	basepri, r0					\n"
 					"	orr r14, #0xd					\n"
-					"	bx r14							\n"
+					"	bx r14							\n"	/*调度器开始执行*/
 					"									\n"
 					"	.align 4						\n"
 					"pxCurrentTCBConst2: .word pxCurrentTCB				\n"
@@ -237,15 +237,15 @@ void vPortSVCHandler( void )
 static void prvPortStartFirstTask( void )
 {
 	__asm volatile(
-					" ldr r0, =0xE000ED08 	\n" /* Use the NVIC offset register to locate the stack. */
-					" ldr r0, [r0] 			\n"
-					" ldr r0, [r0] 			\n"
-					" msr msp, r0			\n" /* Set the msp back to the start of the stack. */
+					" ldr r0, =0xE000ED08 	\n" /* Use the NVIC offset register to locate the stack.向量表偏移寄存器VTOR */
+					" ldr r0, [r0] 			\n"	/*读取VTOR 寄存器（向量表起始地址0x08000000）*/
+					" ldr r0, [r0] 			\n"	/*获取了MSP的初始值*/
+					" msr msp, r0			\n" /* Set the msp back to the start of the stack. 复位了MSP*/
 					" cpsie i				\n" /* Globally enable interrupts. */
 					" cpsie f				\n"
-					" dsb					\n"
+					" dsb					\n"	/*数据同步和指令同步屏障*/
 					" isb					\n"
-					" svc 0					\n" /* System call to start first task. */
+					" svc 0					\n" /* System call to start first task. 系统调用来启动第一个任务，见vPortSVCHandler()*/
 					" nop					\n"
 				);
 }
@@ -328,13 +328,13 @@ BaseType_t xPortStartScheduler( void )
 
 	/* Start the timer that generates the tick ISR.  Interrupts are disabled
 	here already. */
-	vPortSetupTimerInterrupt();
+	vPortSetupTimerInterrupt();					/*Systick 定时，开启其中断*/
 
 	/* Initialise the critical nesting count ready for the first task. */
 	uxCriticalNesting = 0;
 
 	/* Start the first task. */
-	prvPortStartFirstTask();
+	prvPortStartFirstTask();					/*真正启动第一个任务，由汇编语言编写*/
 
 	/* Should never get here as the tasks will now be executing!  Call the task
 	exit error function to prevent compiler warnings about a static function

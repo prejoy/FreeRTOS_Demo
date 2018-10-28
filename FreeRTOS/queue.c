@@ -94,24 +94,24 @@ typedef struct QueueDefinition
 	union							/* Use of a union is an exception to the coding standard to ensure two mutually exclusive structure members don't appear simultaneously (wasting RAM). */
 	{
 		int8_t *pcReadFrom;			/*< Points to the last place that a queued item was read from when the structure is used as a queue. */
-		UBaseType_t uxRecursiveCallCount;/*< Maintains a count of the number of times a recursive mutex has been recursively 'taken' when the structure is used as a mutex. */
+		UBaseType_t uxRecursiveCallCount;/*用作递归互斥量，recursive mutex时用来将记录其递归互斥量被调用的次数< Maintains a count of the number of times a recursive mutex has been recursively 'taken' when the structure is used as a mutex. */
 	} u;
 
-	List_t xTasksWaitingToSend;		/*< List of tasks that are blocked waiting to post onto this queue.  Stored in priority order. */
+	List_t xTasksWaitingToSend;		/*<一个列表，入队失败进入阻塞态的任务会挂在此列表上 List of tasks that are blocked waiting to post onto this queue.  Stored in priority order. */
 	List_t xTasksWaitingToReceive;	/*< List of tasks that are blocked waiting to read from this queue.  Stored in priority order. */
 
 	volatile UBaseType_t uxMessagesWaiting;/*< The number of items currently in the queue. */
 	UBaseType_t uxLength;			/*< The length of the queue defined as the number of items it will hold, not the number of bytes. */
 	UBaseType_t uxItemSize;			/*< The size of each items that the queue will hold. */
 
-	volatile int8_t cRxLock;		/*< Stores the number of items received from the queue (removed from the queue) while the queue was locked.  Set to queueUNLOCKED when the queue is not locked. */
+	volatile int8_t cRxLock;		/*< 与队列上锁有关Stores the number of items received from the queue (removed from the queue) while the queue was locked.  Set to queueUNLOCKED when the queue is not locked. */
 	volatile int8_t cTxLock;		/*< Stores the number of items transmitted to the queue (added to the queue) while the queue was locked.  Set to queueUNLOCKED when the queue is not locked. */
 
 	#if( ( configSUPPORT_STATIC_ALLOCATION == 1 ) && ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) )
 		uint8_t ucStaticallyAllocated;	/*< Set to pdTRUE if the memory used by the queue was statically allocated to ensure no attempt is made to free the memory. */
 	#endif
 
-	#if ( configUSE_QUEUE_SETS == 1 )
+	#if ( configUSE_QUEUE_SETS == 1 )		/*队列集相关宏*/
 		struct QueueDefinition *pxQueueSetContainer;
 	#endif
 
@@ -228,6 +228,7 @@ static void prvInitialiseNewQueue( const UBaseType_t uxQueueLength, const UBaseT
 /*
  * Macro to mark a queue as locked.  Locking a queue prevents an ISR from
  * accessing the queue event lists.
+ * 当队列上锁后，队列项是可以加入或者移出队列的，当相应的列表不会更新
  */
 #define prvLockQueue( pxQueue )								\
 	taskENTER_CRITICAL();									\
@@ -252,6 +253,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 
 	taskENTER_CRITICAL();
 	{
+		/*init members*/
 		pxQueue->pcTail = pxQueue->pcHead + ( pxQueue->uxLength * pxQueue->uxItemSize );
 		pxQueue->uxMessagesWaiting = ( UBaseType_t ) 0U;
 		pxQueue->pcWriteTo = pxQueue->pcHead;
@@ -261,8 +263,8 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 
 		if( xNewQueue == pdFALSE )
 		{
-			/* If there are tasks blocked waiting to read from the queue, then
-			the tasks will remain blocked as after this function exits the queue
+			/* If there are tasks blocked waiting to read from the queue, then		复位后队列为空，对于因出队而阻塞的任务依旧阻塞
+			the tasks will remain blocked as after this function exits the queue	但对于因入队而阻塞的任务解除阻塞，从响应的列表中清除
 			will still be empty.  If there are tasks blocked waiting to write to
 			the queue, then one should be unblocked as after this function exits
 			it will be possible to write to it. */
@@ -354,7 +356,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 /*-----------------------------------------------------------*/
 
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
-
+										/*队列的长度										单元大小							队列类型*/
 	QueueHandle_t xQueueGenericCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize, const uint8_t ucQueueType )
 	{
 	Queue_t *pxNewQueue;
@@ -363,7 +365,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 
 		configASSERT( uxQueueLength > ( UBaseType_t ) 0 );
 
-		if( uxItemSize == ( UBaseType_t ) 0 )
+		if( uxItemSize == ( UBaseType_t ) 0 )				/*如果队列大小为0，就不需要存储区*/
 		{
 			/* There is not going to be a queue storage area. */
 			xQueueSizeInBytes = ( size_t ) 0;
@@ -371,10 +373,10 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 		else
 		{
 			/* Allocate enough space to hold the maximum number of items that
-			can be in the queue at any time. */
+			can be in the queue at any time. 				计算所需存储区大小*/
 			xQueueSizeInBytes = ( size_t ) ( uxQueueLength * uxItemSize ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
 		}
-
+															/*进行动态分配*/
 		pxNewQueue = ( Queue_t * ) pvPortMalloc( sizeof( Queue_t ) + xQueueSizeInBytes );
 
 		if( pxNewQueue != NULL )
@@ -383,7 +385,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 			storage area. */
 			pucQueueStorage = ( ( uint8_t * ) pxNewQueue ) + sizeof( Queue_t );
 
-			#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+			#if( configSUPPORT_STATIC_ALLOCATION == 1 )		/*标记为动态创建的queue*/
 			{
 				/* Queues can be created either statically or dynamically, so
 				note this task was created dynamically in case it is later
@@ -391,7 +393,7 @@ Queue_t * const pxQueue = ( Queue_t * ) xQueue;
 				pxNewQueue->ucStaticallyAllocated = pdFALSE;
 			}
 			#endif /* configSUPPORT_STATIC_ALLOCATION */
-
+															/*init queue*/
 			prvInitialiseNewQueue( uxQueueLength, uxItemSize, pucQueueStorage, ucQueueType, pxNewQueue );
 		}
 		else
@@ -422,14 +424,14 @@ static void prvInitialiseNewQueue( const UBaseType_t uxQueueLength, const UBaseT
 	else
 	{
 		/* Set the head to the start of the queue storage area. */
-		pxNewQueue->pcHead = ( int8_t * ) pucQueueStorage;
+		pxNewQueue->pcHead = ( int8_t * ) pucQueueStorage;			/*指向队列存储区的首地址*/
 	}
 
 	/* Initialise the queue members as described where the queue type is
 	defined. */
 	pxNewQueue->uxLength = uxQueueLength;
 	pxNewQueue->uxItemSize = uxItemSize;
-	( void ) xQueueGenericReset( pxNewQueue, pdTRUE );
+	( void ) xQueueGenericReset( pxNewQueue, pdTRUE );				/*复位队列*/
 
 	#if ( configUSE_TRACE_FACILITY == 1 )
 	{

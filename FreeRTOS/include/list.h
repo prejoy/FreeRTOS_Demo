@@ -142,8 +142,13 @@ struct xLIST_ITEM
 	configLIST_VOLATILE TickType_t xItemValue;			/*< The value being listed.  In most cases this is used to sort the list in descending order. */
 	struct xLIST_ITEM * configLIST_VOLATILE pxNext;		/*< Pointer to the next ListItem_t in the list. */
 	struct xLIST_ITEM * configLIST_VOLATILE pxPrevious;	/*< Pointer to the previous ListItem_t in the list. */
-	void * pvOwner;										/*< Pointer to the object (normally a TCB) that contains the list item.  There is therefore a two way link between the object containing the list item and the list item itself. */
-	void * configLIST_VOLATILE pvContainer;				/*< Pointer to the list in which this list item is placed (if any). */
+
+	void * pvOwner;										/*列表项的所有者，通常是TCB < Pointer to the object (normally a TCB) that contains the list item.  There is therefore a two way link between the object containing the list item and the list item itself. */
+	void * configLIST_VOLATILE pvContainer;				/*列表项在哪个列表中                  < Pointer to the list in which this list item is placed (if any). */
+														/*在TCB_t中有两个变量xStateListItem和xEventListItem，这两个变量就是ListItem_t类型的，以xStateListItem为例当创建一个任务后，
+														 *xStateListItem的pvOwner变量就指向这个任务的TCB，表示xStateListItem属于此任务。当任务进入就绪态后，xStateListItem的变量pvContainer就
+														 * 指向就绪列表，表示此列表项在就绪列表中
+														 * */
 	listSECOND_LIST_ITEM_INTEGRITY_CHECK_VALUE			/*< Set to a known value if configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES is set to 1. */
 };
 typedef struct xLIST_ITEM ListItem_t;					/* For some reason lint wants this as two separate definitions. */
@@ -162,10 +167,10 @@ typedef struct xMINI_LIST_ITEM MiniListItem_t;
  */
 typedef struct xLIST
 {
-	listFIRST_LIST_INTEGRITY_CHECK_VALUE				/*< Set to a known value if configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES is set to 1. */
-	volatile UBaseType_t uxNumberOfItems;
-	ListItem_t * configLIST_VOLATILE pxIndex;			/*< Used to walk through the list.  Points to the last item returned by a call to listGET_OWNER_OF_NEXT_ENTRY (). */
-	MiniListItem_t xListEnd;							/*< List item that contains the maximum possible item value meaning it is always at the end of the list and is therefore used as a marker. */
+	listFIRST_LIST_INTEGRITY_CHECK_VALUE				/*如果使用list检查机制，就多两个检查的值< Set to a known value if configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES is set to 1. */
+	volatile UBaseType_t uxNumberOfItems;				/*number of ListItems in a List */
+	ListItem_t * configLIST_VOLATILE pxIndex;			/*用于遍历列表，指针，索引最后一个ListItem< Used to walk through the list.  Points to the last item returned by a call to listGET_OWNER_OF_NEXT_ENTRY (). */
+	MiniListItem_t xListEnd;							/*列出包含最大可能项目值的项目，这意味着它始终位于列表的末尾，因此用作标记，列表末尾。< List item that contains the maximum possible item value meaning it is always at the end of the list and is therefore used as a marker. */
 	listSECOND_LIST_INTEGRITY_CHECK_VALUE				/*< Set to a known value if configUSE_LIST_DATA_INTEGRITY_CHECK_BYTES is set to 1. */
 } List_t;
 

@@ -268,16 +268,16 @@ to its original value when it is released. */
  */
 typedef struct tskTaskControlBlock
 {
-	volatile StackType_t	*pxTopOfStack;	/*< Points to the location of the last item placed on the tasks stack.  THIS MUST BE THE FIRST MEMBER OF THE TCB STRUCT. */
+	volatile StackType_t	*pxTopOfStack;	/*任务堆栈栈顶< Points to the location of the last item placed on the tasks stack.  THIS MUST BE THE FIRST MEMBER OF THE TCB STRUCT. */
 
 	#if ( portUSING_MPU_WRAPPERS == 1 )
-		xMPU_SETTINGS	xMPUSettings;		/*< The MPU settings are defined as part of the port layer.  THIS MUST BE THE SECOND MEMBER OF THE TCB STRUCT. */
+		xMPU_SETTINGS	xMPUSettings;		/*MPUsettings < The MPU settings are defined as part of the port layer.  THIS MUST BE THE SECOND MEMBER OF THE TCB STRUCT. */
 	#endif
 
-	ListItem_t			xStateListItem;	/*< The list that the state list item of a task is reference from denotes the state of that task (Ready, Blocked, Suspended ). */
-	ListItem_t			xEventListItem;		/*< Used to reference a task from an event list. */
-	UBaseType_t			uxPriority;			/*< The priority of the task.  0 is the lowest priority. */
-	StackType_t			*pxStack;			/*< Points to the start of the stack. */
+	ListItem_t			xStateListItem;		/*ListItem_t类型的struct,该列表项用来表示任务的状态< The list that the state list item of a task is reference from denotes the state of that task (Ready, Blocked, Suspended ). */
+	ListItem_t			xEventListItem;		/*该列表项用来表示在事件列表中reference该任务< Used to reference a task from an event list. */
+	UBaseType_t			uxPriority;			/*Task Priority< The priority of the task.  0 is the lowest priority. */
+	StackType_t			*pxStack;			/*<任务堆栈起始地址< Points to the start of the stack. */
 	char				pcTaskName[ configMAX_TASK_NAME_LEN ];/*< Descriptive name given to the task when created.  Facilitates debugging only. */ /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
 
 	#if ( ( portSTACK_GROWTH > 0 ) || ( configRECORD_STACK_HIGH_ADDRESS == 1 ) )
@@ -285,28 +285,28 @@ typedef struct tskTaskControlBlock
 	#endif
 
 	#if ( portCRITICAL_NESTING_IN_TCB == 1 )
-		UBaseType_t		uxCriticalNesting;	/*< Holds the critical section nesting depth for ports that do not maintain their own count in the port layer. */
+		UBaseType_t		uxCriticalNesting;	/*临界段嵌套层数< Holds the critical section nesting depth for ports that do not maintain their own count in the port layer. */
 	#endif
 
-	#if ( configUSE_TRACE_FACILITY == 1 )
+	#if ( configUSE_TRACE_FACILITY == 1 )	/*Use in Trace or Debug,记录任务号和TCB号来跟踪*/
 		UBaseType_t		uxTCBNumber;		/*< Stores a number that increments each time a TCB is created.  It allows debuggers to determine when a task has been deleted and then recreated. */
 		UBaseType_t		uxTaskNumber;		/*< Stores a number specifically for use by third party trace code. */
 	#endif
 
 	#if ( configUSE_MUTEXES == 1 )
-		UBaseType_t		uxBasePriority;		/*< The priority last assigned to the task - used by the priority inheritance mechanism. */
-		UBaseType_t		uxMutexesHeld;
+		UBaseType_t		uxBasePriority;		/*<该任务最后一次分配的优先级 The priority last assigned to the task - used by the priority inheritance mechanism. */
+		UBaseType_t		uxMutexesHeld;		/*任务获取到的Mutex信号量数目*/
 	#endif
 
 	#if ( configUSE_APPLICATION_TASK_TAG == 1 )
 		TaskHookFunction_t pxTaskTag;
 	#endif
 
-	#if( configNUM_THREAD_LOCAL_STORAGE_POINTERS > 0 )
+	#if( configNUM_THREAD_LOCAL_STORAGE_POINTERS > 0 )		/*与本地存储有关*/
 		void			*pvThreadLocalStoragePointers[ configNUM_THREAD_LOCAL_STORAGE_POINTERS ];
 	#endif
 
-	#if( configGENERATE_RUN_TIME_STATS == 1 )
+	#if( configGENERATE_RUN_TIME_STATS == 1 )			/*记录任务运行态总时间	*/
 		uint32_t		ulRunTimeCounter;	/*< Stores the amount of time the task has spent in the Running state. */
 	#endif
 
@@ -321,13 +321,13 @@ typedef struct tskTaskControlBlock
 		struct	_reent xNewLib_reent;
 	#endif
 
-	#if( configUSE_TASK_NOTIFICATIONS == 1 )
+	#if( configUSE_TASK_NOTIFICATIONS == 1 )			/*使用任务通知*/
 		volatile uint32_t ulNotifiedValue;
 		volatile uint8_t ucNotifyState;
 	#endif
 
 	/* See the comments above the definition of
-	tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE. */
+	tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE. */	/*任务是否是静态创建的*/
 	#if( tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE != 0 ) /*lint !e731 Macro has been consolidated for readability reasons. */
 		uint8_t	ucStaticallyAllocated; 		/*< Set to pdTRUE if the task is a statically allocated to ensure no attempt is made to free the memory. */
 	#endif
@@ -768,12 +768,14 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 		{
 		StackType_t *pxStack;
 
-			/* Allocate space for the stack used by the task being created. */
+			/* Allocate space for the stack used by the task being created.
+			 * 给任务堆栈申请内存，申请是会做字节对齐处理 pvPortMalloc*/
 			pxStack = ( StackType_t * ) pvPortMalloc( ( ( ( size_t ) usStackDepth ) * sizeof( StackType_t ) ) ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
 
 			if( pxStack != NULL )
 			{
-				/* Allocate space for the TCB. */
+				/* Allocate space for the TCB.
+				 * 同样再申请内存给TCB_t */
 				pxNewTCB = ( TCB_t * ) pvPortMalloc( sizeof( TCB_t ) ); /*lint !e961 MISRA exception as the casts are only redundant for some paths. */
 
 				if( pxNewTCB != NULL )
@@ -797,6 +799,7 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 
 		if( pxNewTCB != NULL )
 		{
+			/*标记任务堆栈和TCB是动态申请到的还是静态分配的*/
 			#if( tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE != 0 ) /*lint !e731 Macro has been consolidated for readability reasons. */
 			{
 				/* Tasks can be created statically or dynamically, so note this
@@ -805,7 +808,9 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 			}
 			#endif /* configSUPPORT_STATIC_ALLOCATION */
 
+			/*初始化TCB*/
 			prvInitialiseNewTask( pxTaskCode, pcName, ( uint32_t ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
+			/*将新创建的任务添加到就绪列表中*/
 			prvAddNewTaskToReadyList( pxNewTCB );
 			xReturn = pdPASS;
 		}
@@ -1902,6 +1907,7 @@ void vTaskStartScheduler( void )
 {
 BaseType_t xReturn;
 
+	/*该宏决定创建IdleTask的方式是静态还是动态*/
 	/* Add the idle task at the lowest priority. */
 	#if( configSUPPORT_STATIC_ALLOCATION == 1 )
 	{
@@ -1941,6 +1947,7 @@ BaseType_t xReturn;
 	}
 	#endif /* configSUPPORT_STATIC_ALLOCATION */
 
+	/*是否使用软件定时器，需要会创建*/
 	#if ( configUSE_TIMERS == 1 )
 	{
 		if( xReturn == pdPASS )
@@ -1954,7 +1961,7 @@ BaseType_t xReturn;
 	}
 	#endif /* configUSE_TIMERS */
 
-	if( xReturn == pdPASS )
+	if( xReturn == pdPASS )								/*空闲任务和定时器创建成功*/
 	{
 		/* freertos_tasks_c_additions_init() should only be called if the user
 		definable macro FREERTOS_TASKS_C_ADDITIONS_INIT() is defined, as that is
@@ -1970,7 +1977,7 @@ BaseType_t xReturn;
 		the created tasks contain a status word with interrupts switched on
 		so interrupts will automatically get re-enabled when the first task
 		starts to run. */
-		portDISABLE_INTERRUPTS();
+		portDISABLE_INTERRUPTS();						/*关中断，在vPortSVCHandler()中打开*/
 
 		#if ( configUSE_NEWLIB_REENTRANT == 1 )
 		{
@@ -1981,7 +1988,7 @@ BaseType_t xReturn;
 		#endif /* configUSE_NEWLIB_REENTRANT */
 
 		xNextTaskUnblockTime = portMAX_DELAY;
-		xSchedulerRunning = pdTRUE;
+		xSchedulerRunning = pdTRUE;						/*调度器开始运行*/
 		xTickCount = ( TickType_t ) 0U;
 
 		/* If configGENERATE_RUN_TIME_STATS is defined then the following
@@ -1990,11 +1997,11 @@ BaseType_t xReturn;
 		is set to 0 and the following line fails to build then ensure you do not
 		have portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() defined in your
 		FreeRTOSConfig.h file. */
-		portCONFIGURE_TIMER_FOR_RUN_TIME_STATS();
+		portCONFIGURE_TIMER_FOR_RUN_TIME_STATS();		/*需要宏来启动时间统计功能，需要手动实现宏portCONFIGURE_TIMER_FOR_RUN_TIME_STATS，此宏用来配置一个定时器*/
 
 		/* Setting up the timer tick is hardware specific and thus in the
 		portable interface. */
-		if( xPortStartScheduler() != pdFALSE )
+		if( xPortStartScheduler() != pdFALSE )			/*启用调度器，到这里不应该返回！！*/
 		{
 			/* Should not reach here as if the scheduler is running the
 			function will not return. */
