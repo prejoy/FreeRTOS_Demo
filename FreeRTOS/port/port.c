@@ -170,13 +170,15 @@ static UBaseType_t uxCriticalNesting = 0xaaaaaaaa;
 
 /*
  * See header file for description.
+ * 这里的堆栈是任务堆栈，内存里的，地址高->低，为xPSR，PC，LR，R12，R3,R2,R1,R0,EXEC_RETURN,R11...R4,现场保护到这里，下面留给进程
+ 这个函数好像是一直使用MSP的，也就是一直运行在Handle态？
  */
 StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t pxCode, void *pvParameters )
 {
 	/* Simulate the stack frame as it would be created by a context switch
 	interrupt. */
 	pxTopOfStack--; /* Offset added to account for the way the MCU uses the stack on entry/exit of interrupts. */
-	*pxTopOfStack = portINITIAL_XPSR;	/* xPSR */
+	*pxTopOfStack = portINITIAL_XPSR;	/* xPSR 设置xPSR寄存器，表示处于Thumb状态*/
 	pxTopOfStack--;
 	*pxTopOfStack = ( ( StackType_t ) pxCode ) & portSTART_ADDRESS_MASK;	/* PC */
 	pxTopOfStack--;

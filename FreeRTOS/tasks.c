@@ -851,7 +851,7 @@ UBaseType_t x;
 		uxPriority &= ~portPRIVILEGE_BIT;
 	#endif /* portUSING_MPU_WRAPPERS == 1 */
 
-	/* Avoid dependency on memset() if it is not required. */
+	/* Avoid dependency on memset() if it is not required. 如果使能了堆栈溢出检测功能或者追踪功能，则使用一个定值tskSTACK_FILE_BYTE来填充任务堆栈，此值为0xa5U*/
 	#if( tskSET_NEW_STACKS_TO_KNOWN_VALUE == 1 )
 	{
 		/* Fill the stack with a known value to assist debugging. */
@@ -864,7 +864,7 @@ UBaseType_t x;
 	portSTACK_GROWTH is used to make the result positive or negative as required
 	by the port. */
 	#if( portSTACK_GROWTH < 0 )
-	{
+	{	/*计算栈顶，，后面用来初始化堆栈*/
 		pxTopOfStack = pxNewTCB->pxStack + ( ulStackDepth - ( uint32_t ) 1 );
 		pxTopOfStack = ( StackType_t * ) ( ( ( portPOINTER_SIZE_TYPE ) pxTopOfStack ) & ( ~( ( portPOINTER_SIZE_TYPE ) portBYTE_ALIGNMENT_MASK ) ) ); /*lint !e923 MISRA exception.  Avoiding casts between pointers and integers is not practical.  Size differences accounted for using portPOINTER_SIZE_TYPE type. */
 
@@ -895,7 +895,7 @@ UBaseType_t x;
 	/* Store the task name in the TCB. */
 	for( x = ( UBaseType_t ) 0; x < ( UBaseType_t ) configMAX_TASK_NAME_LEN; x++ )
 	{
-		pxNewTCB->pcTaskName[ x ] = pcName[ x ];
+		pxNewTCB->pcTaskName[ x ] = pcName[ x ];			/*保存任务名*/
 
 		/* Don't copy all configMAX_TASK_NAME_LEN if the string is shorter than
 		configMAX_TASK_NAME_LEN characters just in case the memory after the
@@ -925,22 +925,22 @@ UBaseType_t x;
 		mtCOVERAGE_TEST_MARKER();
 	}
 
-	pxNewTCB->uxPriority = uxPriority;
-	#if ( configUSE_MUTEXES == 1 )
+	pxNewTCB->uxPriority = uxPriority;				/*初始化TCB的任务优先级uxPriority*/
+	#if ( configUSE_MUTEXES == 1 )					/*使能了Mutex信号量，与优先级反转有关*/
 	{
 		pxNewTCB->uxBasePriority = uxPriority;
 		pxNewTCB->uxMutexesHeld = 0;
 	}
 	#endif /* configUSE_MUTEXES */
 
-	vListInitialiseItem( &( pxNewTCB->xStateListItem ) );
+	vListInitialiseItem( &( pxNewTCB->xStateListItem ) );		/*初始化TCB结构体的两个列表项*/
 	vListInitialiseItem( &( pxNewTCB->xEventListItem ) );
 
 	/* Set the pxNewTCB as a link back from the ListItem_t.  This is so we can get
 	back to	the containing TCB from a generic item in a list. */
 	listSET_LIST_ITEM_OWNER( &( pxNewTCB->xStateListItem ), pxNewTCB );
 
-	/* Event lists are always in priority order. */
+	/* Event lists are always in priority order. 列表项是升序排列的，所以得算出列表项的升序值排列*/
 	listSET_LIST_ITEM_VALUE( &( pxNewTCB->xEventListItem ), ( TickType_t ) configMAX_PRIORITIES - ( TickType_t ) uxPriority ); /*lint !e961 MISRA exception as the casts are only redundant for some ports. */
 	listSET_LIST_ITEM_OWNER( &( pxNewTCB->xEventListItem ), pxNewTCB );
 
@@ -1012,7 +1012,7 @@ UBaseType_t x;
 	}
 	#else /* portUSING_MPU_WRAPPERS */
 	{
-		pxNewTCB->pxTopOfStack = pxPortInitialiseStack( pxTopOfStack, pxTaskCode, pvParameters );
+		pxNewTCB->pxTopOfStack = pxPortInitialiseStack( pxTopOfStack, pxTaskCode, pvParameters );				/*初始化任务堆栈*/
 	}
 	#endif /* portUSING_MPU_WRAPPERS */
 
@@ -1020,7 +1020,7 @@ UBaseType_t x;
 	{
 		/* Pass the handle out in an anonymous way.  The handle can be used to
 		change the created task's priority, delete the created task, etc.*/
-		*pxCreatedTask = ( TaskHandle_t ) pxNewTCB;
+		*pxCreatedTask = ( TaskHandle_t ) pxNewTCB;																/*生成任务句柄，返回给参数pxCreatedTask，可以看出任务句柄就是任务控制块*/
 	}
 	else
 	{
