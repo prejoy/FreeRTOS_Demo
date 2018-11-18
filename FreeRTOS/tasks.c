@@ -147,6 +147,7 @@ configIDLE_TASK_NAME in FreeRTOSConfig.h. */
 
 	/*-----------------------------------------------------------*/
 
+	/*软件方法，通用性好，对任务数量没有限制，但效率低*/
 	#define taskSELECT_HIGHEST_PRIORITY_TASK()															\
 	{																									\
 	UBaseType_t uxTopPriority = uxTopReadyPriority;														\
@@ -183,6 +184,7 @@ configIDLE_TASK_NAME in FreeRTOSConfig.h. */
 
 	/*-----------------------------------------------------------*/
 
+	/*硬件方法，效率高，但只能有最多32个优先级，与计算前导零指令有关*/
 	#define taskSELECT_HIGHEST_PRIORITY_TASK()														\
 	{																								\
 	UBaseType_t uxTopPriority;																		\
@@ -2865,6 +2867,9 @@ BaseType_t xSwitchRequired = pdFALSE;
 #endif /* configUSE_APPLICATION_TASK_TAG */
 /*-----------------------------------------------------------*/
 
+/*获取下一个要运行的任务*/
+/*taskSELECT_HIGHEST_PRIORITY_TASK();的方法由configUSE_PORT_OPTIMISED_TASK_SELECTION来决定
+ * 配置为1，使用硬件方法，否则使用软件方法*/
 void vTaskSwitchContext( void )
 {
 	if( uxSchedulerSuspended != ( UBaseType_t ) pdFALSE )
@@ -2910,7 +2915,7 @@ void vTaskSwitchContext( void )
 
 		/* Select a new task to run using either the generic C or port
 		optimised asm code. */
-		taskSELECT_HIGHEST_PRIORITY_TASK();
+		taskSELECT_HIGHEST_PRIORITY_TASK();				/*获取下一个要运行的任务*/
 		traceTASK_SWITCHED_IN();
 
 		#if ( configUSE_NEWLIB_REENTRANT == 1 )

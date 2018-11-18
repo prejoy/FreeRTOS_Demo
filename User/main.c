@@ -27,8 +27,10 @@ int main()
 	uart_init(115200);
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
 
-#if MAINFUNC_TYPE == 1
+#if MAINFUNC_TYPE == USE_MAIN_QUEUE
 	main_queue();
+#elif MAINFUNC_TYPE == USE_MAIN_SOFTWARETIMER
+	main_softwaretimre();
 #endif
 
 	printf("MAIN ERROR\r\n");

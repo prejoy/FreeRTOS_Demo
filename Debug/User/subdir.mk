@@ -6,18 +6,21 @@
 C_SRCS += \
 ../User/main.c \
 ../User/main_queue.c \
+../User/main_softwaretimer.c \
 ../User/stm32f10x_it.c \
 ../User/system_stm32f10x.c 
 
 OBJS += \
 ./User/main.o \
 ./User/main_queue.o \
+./User/main_softwaretimer.o \
 ./User/stm32f10x_it.o \
 ./User/system_stm32f10x.o 
 
 C_DEPS += \
 ./User/main.d \
 ./User/main_queue.d \
+./User/main_softwaretimer.d \
 ./User/stm32f10x_it.d \
 ./User/system_stm32f10x.d 
 

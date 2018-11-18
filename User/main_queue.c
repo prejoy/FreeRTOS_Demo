@@ -7,24 +7,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "stm32f10x.h"
-#include "led.h"
-#include "delay.h"
-#include "usart.h"
-
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 
 #include "main.h"
 
-#if MAINFUNC_TYPE == 1
+#if MAINFUNC_TYPE == USE_MAIN_QUEUE
 
 
 /*queue data type */
 typedef struct A_Message
 {
-char ucMessageID;
-char ucData[ 20 ];
+	char ucMessageID;
+	char ucData[ 20 ];
 } AMessage;
 
 #define QUEUE_LENGTH 		5

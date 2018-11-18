@@ -101,6 +101,12 @@ NVIC value of 255. */
 /*new addition */
 //#define configASSERT 	0
 
+#if MAINFUNC_TYPE == USE_MAIN_SOFTWARETIMER
+#define configUSE_TIMERS	1
+#define configTIMER_TASK_PRIORITY	3
+#define configTIMER_QUEUE_LENGTH	5
+#define configTIMER_TASK_STACK_DEPTH	512
+#endif
 
 
 

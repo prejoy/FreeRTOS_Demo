@@ -388,6 +388,7 @@ void vPortExitCritical( void )
 }
 /*-----------------------------------------------------------*/
 
+/*任务切换*/
 void xPortPendSVHandler( void )
 {
 	/* This is a naked function. */
@@ -406,7 +407,7 @@ void xPortPendSVHandler( void )
 	"	stmdb sp!, {r3, r14}				\n"
 	"	mov r0, %0							\n"
 	"	msr basepri, r0						\n"
-	"	bl vTaskSwitchContext				\n"
+	"	bl vTaskSwitchContext				\n"		/*此函数用来获取下一个要运行的任务，并更新TCB*/
 	"	mov r0, #0							\n"
 	"	msr basepri, r0						\n"
 	"	ldmia sp!, {r3, r14}				\n"

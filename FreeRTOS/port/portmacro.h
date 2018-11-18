@@ -78,7 +78,7 @@ typedef unsigned long UBaseType_t;
 /* Scheduler utilities. */
 #define portYIELD() 															\
 {																				\
-	/* Set a PendSV to request a context switch. */								\
+	/* Set a PendSV to request a context switch.手动挂起PENDSV位，引起pendsv异常，切换上下文 */								\
 	portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;								\
 																				\
 	/* Barriers are normally not required but do ensure the code is completely	\
