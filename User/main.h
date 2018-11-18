@@ -12,7 +12,7 @@
 #include "delay.h"
 #include "usart.h"
 
-#define MAINFUNC_TYPE	USE_MAIN_SOFTWARETIMER
+#define MAINFUNC_TYPE	USE_MAIN_QUEUE
 
 #define USE_MAIN_QUEUE  1
 #define USE_MAIN_SOFTWARETIMER  2
